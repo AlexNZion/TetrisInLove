@@ -3,9 +3,7 @@ A Tetris Clone by Alex Nascimento
 
 
 TODOs em ordem de prioridade
-todo gráficos
 todo corrigir bug de rotação (peças se sobrepõe)
-todo pontuação
 todo random decente
 todo nextPiece
 todo menus e customização
@@ -27,10 +25,26 @@ function love.load()
   lastPos = { row = 1, col = 5 }
   rotation = 1
   
+  bToBTetris = false
   score = 0
   level = 1
-  nextLevel = { 5, 12, 21, 32, 45, 60, 80, 105, 135, 2000 }
-  timer = 1 -- timer reinicia a cada descida da peça e vai acelerando ao lonog do jogo
+  nextLevel = { 5, 17, 38, 70, 115, 175, 255, 360, 495, 2000 }
+  nextLevelIndex = 1
+  regularFont = love.graphics.newFont(10)
+  valuesFont = love.graphics.newFont("fonts/ShareTechMono-Regular.ttf",60)
+  textFont = love.graphics.newFont("fonts/ShareTechMono-Regular.ttf",20)
+
+  levelText = love.graphics.newText(textFont, "Level")
+  nextLevelText = love.graphics.newText(textFont, "Next Level")
+  scoreText = love.graphics.newText(textFont, "Score")
+  
+  levelValueText = love.graphics.newText(valuesFont,level)
+  nextLevelValueText = love.graphics.newText(valuesFont,nextLevel[nextLevelIndex])
+  scoreValueText = love.graphics.newText(valuesFont,score)
+  
+  timer = { 1, 0.7, 0.5, 0.4, 0.3, 0.2, 0.15, 0.12, 0.1, 0.08 }-- timer reinicia a cada descida da peça e vai acelerando ao lonog do jogo
+  
+  love.graphics.setFont(valuesFont)
   
   --pieces
   shapes = {
@@ -217,7 +231,7 @@ function love.update(dt)
   addToMtx(mtxBase, mtxR, 1, 1) -- reinicia o grid
   addPieceToMtx(shapes[currentPiece][rotation], mtxR, currentPos.row, currentPos.col) -- coloca a peça
   -- gravity movement
-  if(currentTime - lastTime > timer) then
+  if(currentTime - lastTime > timer[level]) then
     lastTime = love.timer.getTime()
     if(isPositionValid("down")) then
       currentPos.row = currentPos.row + 1
@@ -257,11 +271,52 @@ end
 
 function love.draw()
   drawRectGrid(mtxR, width/2 - ((gridWidth/2)*spacing), 50)
-  drawRectGrid(mtxPiecesSample, width - 200, 50)
+  drawLeftPanel()
+  
+  
   drawLog()
+  --drawRectGrid(mtxPiecesSample, width - 200, 50)
 end
 
+function drawLeftPanel()
+  drawLeftPanelStructure()
+  drawLevelBlock()
+  drawScoreBlock()
+  drawNextLevelBlock()
+end
 
+function drawLeftPanelStructure()
+  love.graphics.setColor(0.2,0.2,0.2)
+  love.graphics.rectangle("fill", 100,50,150,500)
+  love.graphics.setColor(0.1,0.1,0.1)
+  love.graphics.rectangle("fill", 110,60,130,140)
+  love.graphics.setColor(0.1,0.1,0.1)
+  love.graphics.rectangle("fill", 110,230,130,140)
+  love.graphics.setColor(0.1,0.1,0.1)
+  love.graphics.rectangle("fill", 110,400,130,140)
+end
+
+function drawLevelBlock()
+  love.graphics.setColor(1,1,1)
+  love.graphics.draw(levelText, 120,65)
+  love.graphics.setColor(1,1,0)
+  love.graphics.draw(levelValueText, 120, 120)
+end
+
+function drawNextLevelBlock()
+  love.graphics.setColor(1,1,1)
+  love.graphics.draw(nextLevelText, 120,235)
+  love.graphics.setColor(1,1,0)
+  love.graphics.draw(nextLevelValueText, 120, 290)
+  
+end
+
+function drawScoreBlock()
+  love.graphics.setColor(1,1,1)
+  love.graphics.draw(scoreText, 120, 405)
+  love.graphics.setColor(1,1,0)
+  love.graphics.draw(scoreValueText, 120, 460)
+end
 
 function drawCharGrid(matrix)
   for row = 1, gridHeight do
@@ -333,6 +388,8 @@ function drawRectGrid(matrix, x, y)
 end
 
 function drawLog()
+  love.graphics.setFont(regularFont)
+  love.graphics.setColor(1,1,1)
   for i = 1, #message do
     love.graphics.print(message[i], 10, 20*i)
   end
@@ -404,6 +461,37 @@ function checkLinesClear() -- todo otimizar criando uma função getUpmost()
       end
     end
   end
+  countPoints(linesCleared)
+  message[1] = linesCleared
+end
+
+function countPoints(amountCleared)
+  message[2] = "score antes: "..score
+  if amountCleared == 1 then
+    score = score + 1
+    bToBTetris = false
+  elseif amountCleared == 2 then
+    score = score + 3
+    bToBTetris = false
+  elseif amountCleared == 3 then
+    score = score + 5
+    bToBTetris = false
+  elseif amountCleared == 4 then
+    if bToBTetris == true then
+      score = score + 12
+    else 
+      score = score + 8
+      bToBTetris = true
+    end
+  end
+  if score >= nextLevel[nextLevelIndex] then
+    nextLevelIndex = nextLevelIndex + 1
+    nextLevelValueText:set(nextLevel[nextLevelIndex])
+    level = level + 1
+    levelValueText:set(level)
+  end
+  scoreValueText:set(score)
+  
 end
 
 function clearLine(line)

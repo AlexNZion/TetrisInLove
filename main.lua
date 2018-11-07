@@ -27,6 +27,9 @@ function love.load()
   lastPos = { row = 1, col = 5 }
   rotation = 1
   
+  score = 0
+  level = 1
+  nextLevel = { 5, 12, 21, 32, 45, 60, 80, 105, 135, 2000 }
   timer = 1 -- timer reinicia a cada descida da peça e vai acelerando ao lonog do jogo
   
   --pieces
@@ -253,8 +256,6 @@ end
 ----------------------------------------------------------------------------
 
 function love.draw()
-  love.graphics.setColor(1,1,0)
-  love.graphics.rectangle("fill", 50,50,10,10)
   drawRectGrid(mtxR, width/2 - ((gridWidth/2)*spacing), 50)
   drawRectGrid(mtxPiecesSample, width - 200, 50)
   drawLog()
@@ -386,6 +387,7 @@ function placePiece()
 end
 
 function checkLinesClear() -- todo otimizar criando uma função getUpmost()
+  local linesCleared = 0
   for i = currentPos.row, currentPos.row + getDownmost() - 1 do
     local rowCompleted = true
     local j = 1
@@ -397,6 +399,7 @@ function checkLinesClear() -- todo otimizar criando uma função getUpmost()
       else
         clearLine(i)
         downOneRow(i-1)
+        linesCleared = linesCleared + 1
         break
       end
     end

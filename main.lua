@@ -3,8 +3,7 @@ A Tetris Clone by Alex Nascimento
 
 
 TODOs em ordem de prioridade
-todo corrigir bug de rotação (peças se sobrepõe)
-todo random decente
+todo game over
 todo nextPiece
 todo menus e customização
 
@@ -37,30 +36,24 @@ function love.load()
   levelText = love.graphics.newText(textFont, "Level")
   nextLevelText = love.graphics.newText(textFont, "Next Level")
   scoreText = love.graphics.newText(textFont, "Score")
+  pauseText = love.graphics.newText(valuesFont, "PAUSED")
+  gameOverText = love.graphics.newText(valuesFont, "GAME\nOVER")
+  tryAgainText = love.graphics.newText(textFont, "press R to try again")
   
   levelValueText = love.graphics.newText(valuesFont,level)
   nextLevelValueText = love.graphics.newText(valuesFont,nextLevel[nextLevelIndex])
   scoreValueText = love.graphics.newText(valuesFont,score)
   
+  gameOver = false
+  isPaused = false
   timer = { 1, 0.7, 0.5, 0.4, 0.3, 0.2, 0.15, 0.12, 0.1, 0.08 }-- timer reinicia a cada descida da peça e vai acelerando ao lonog do jogo
   
   love.graphics.setFont(valuesFont)
   
+  
   --pieces
   shapes = {
     {
-      {
-        {".",".",".","."},
-        {".",".",".","."},
-        {"I","I","I","I"},
-        {".",".",".","."}
-      },
-      {
-        {".","I",".","."},
-        {".","I",".","."},
-        {".","I",".","."},
-        {".","I",".","."}
-      },
       {
         {".",".",".","."},
         {"I","I","I","I"},
@@ -72,19 +65,21 @@ function love.load()
         {".",".","I","."},
         {".",".","I","."},
         {".",".","I","."}
+      },
+      {
+        {".",".",".","."},
+        {".",".",".","."},
+        {"I","I","I","I"},
+        {".",".",".","."}
+      },
+      {
+        {".","I",".","."},
+        {".","I",".","."},
+        {".","I",".","."},
+        {".","I",".","."}
       }
     },
     {
-      {
-        {".",".","."},
-        {"J","J","J"},
-        {".",".","J"}
-      },
-      {
-        {".","J","."},
-        {".","J","."},
-        {"J","J","."}
-      },
       {
         {".",".","."},
         {"J",".","."},
@@ -94,23 +89,33 @@ function love.load()
         {".","J","J"},
         {".","J","."},
         {".","J","."}
+      },
+      {
+        {".",".","."},
+        {"J","J","J"},
+        {".",".","J"}
+      },
+      {
+        {".","J","."},
+        {".","J","."},
+        {"J","J","."}
       }
     },
     {
       {
         {".",".","."},
-        {"L","L","L"},
-        {"L",".","."}
+        {".",".","L"},
+        {"L","L","L"}
       },
       {
         {"L","L","."},
         {".","L","."},
         {".","L","."}
-      },
+      },      
       {
         {".",".","."},
-        {".",".","L"},
-        {"L","L","L"}
+        {"L","L","L"},
+        {"L",".","."}
       },
       {
         {".","L","."},
@@ -149,22 +154,22 @@ function love.load()
     {
       {
         {".",".","."},
-        {"T","T","T"},
-        {".","T","."}
+        {".","T","."},
+        {"T","T","T"}
       },
       {
         {".","T","."},
-        {"T","T","."},
+        {".","T","T"},
         {".","T","."}
       },
       {
         {".",".","."},
-        {".","T","."},
-        {"T","T","T"}
+        {"T","T","T"},
+        {".","T","."}
       },     
       {
         {".","T","."},
-        {".","T","T"},
+        {"T","T","."},
         {".","T","."}
       }
     },
@@ -211,7 +216,7 @@ function love.load()
   }
   
   createGrids()
-  sortPiece()
+  initPiece()
 end
 
 function createGrids()
@@ -227,16 +232,18 @@ end
 --------------------------------------------------------------------------
 
 function love.update(dt)
-  currentTime = love.timer.getTime()
-  addToMtx(mtxBase, mtxR, 1, 1) -- reinicia o grid
-  addPieceToMtx(shapes[currentPiece][rotation], mtxR, currentPos.row, currentPos.col) -- coloca a peça
-  -- gravity movement
-  if(currentTime - lastTime > timer[level]) then
-    lastTime = love.timer.getTime()
-    if(isPositionValid("down")) then
-      currentPos.row = currentPos.row + 1
-    else
-      placePiece()
+  if isPaused == false and gameOver == false then
+    currentTime = love.timer.getTime()
+    addToMtx(mtxBase, mtxR, 1, 1) -- reinicia o grid
+    addPieceToMtx(shapes[currentPiece][rotation], mtxR, currentPos.row, currentPos.col) -- coloca a peça
+    -- gravity movement
+    if(currentTime - lastTime > timer[level]) then
+      lastTime = love.timer.getTime()
+      if(isPositionValid("down")) then
+        currentPos.row = currentPos.row + 1
+      else
+        placePiece()
+      end
     end
   end
 end
@@ -244,37 +251,45 @@ end
 -----------------------------------------------------------------------------
 -- input
 function love.keypressed(key, scancode, isrepeat)
-  if key == "left"  then
-    if(isPositionValid("left")) then currentPos.col = currentPos.col - 1 end
-  end
-  if key == "right" then 
-    if(isPositionValid("right")) then currentPos.col = currentPos.col + 1 end
-  end
-  if key == "down" then 
-    if(isPositionValid("down")) then 
-      currentPos.row = currentPos.row + 1
+  if isPaused == false and gameOver == false then
+    if key == "left"  then
+      if isPositionValid("left") then currentPos.col = currentPos.col - 1 end
+    end
+    if key == "right" then 
+      if isPositionValid("right") then currentPos.col = currentPos.col + 1 end
+    end
+    if key == "down" then 
+      if isPositionValid("down") then 
+        currentPos.row = currentPos.row + 1
+        lastTime = love.timer.getTime()
+      end
+    end
+    if key == "space" then
+      while isPositionValid("down") do
+        currentPos.row = currentPos.row + 1
+      end
+      placePiece()
       lastTime = love.timer.getTime()
     end
-  end
-  if key == "space" then
-    while isPositionValid("down") do
-      currentPos.row = currentPos.row + 1
+    if key == "up" then
+      rotatePiece()
     end
-    placePiece()
   end
-  if key == "up" then
-    rotatePiece()
-  end
+  if key == "p"  and gameOver == false then isPaused = not isPaused end
   if key == "escape" then love.event.quit() end
+  if key == "r" then love.load(); end
 end
 ----------------------------------------------------------------------------
 
 function love.draw()
   drawRectGrid(mtxR, width/2 - ((gridWidth/2)*spacing), 50)
+    love.graphics.setShader()
   drawLeftPanel()
   
-  
-  drawLog()
+  if isPaused == true then drawPauseScreen() end
+  if gameOver == true then drawGameOverScreen() end
+    
+  drawLog()  
   --drawRectGrid(mtxPiecesSample, width - 200, 50)
 end
 
@@ -327,6 +342,7 @@ function drawCharGrid(matrix)
 end
 
 function drawRectGrid(matrix, x, y)
+  
   local rectSize = 20
   for row = 1, #matrix do
     for col =  1, #matrix[1] do
@@ -387,6 +403,18 @@ function drawRectGrid(matrix, x, y)
   end
 end
 
+function drawPauseScreen()
+  love.graphics.draw(pauseText,300,250)
+end
+
+function drawGameOverScreen()
+  love.graphics.setColor(0.6,0.6,0.6,0.6)
+  love.graphics.rectangle("fill", 275,50,245,495)
+  love.graphics.setColor(1,1,0)
+  love.graphics.draw(gameOverText, 332,200)
+  love.graphics.draw(tryAgainText, 290, 350)
+end
+
 function drawLog()
   love.graphics.setFont(regularFont)
   love.graphics.setColor(1,1,1)
@@ -399,24 +427,38 @@ end
 ---------------------------------------------------------------------------------
 
 function rotatePiece()
+  temp = rotation
   if rotation == #shapes[currentPiece] then 
     rotation = 1
   else 
     rotation = rotation + 1 
   end
   -- correct position if out of bounds
-  if(currentPos.col + getLeftmost() - 1 < 1) then
+  if currentPos.col + getLeftmost() - 1 < 1 then
     currentPos.col = 2 - getLeftmost()
   end
-  if(currentPos.col + getRightmost() - 1 > gridWidth) then
+  if currentPos.col + getRightmost() - 1 > gridWidth then
     currentPos.col = 1 + gridWidth - getRightmost()
   end
-  if(currentPos.row + getDownmost() - 1 > gridHeight) then
+  if currentPos.row + getDownmost() - 1 > gridHeight then
     currentPos.row = 1 + gridHeight - getDownmost()
   end
+  if currentPos.row + getUpmost() - 1 < 1 then
+    currentPos.row = 2 - getUpmost()
+  end
+  
+  -- check colision with other pieces
+  if not isPositionValid("this") then
+    if isPositionValid("up") then
+      currentPos.row = currentPos.row - 1
+    else rotation = temp
+    end
+  end
+  
 end
 
-function addToMtx(matrix1, matrix2, r, c) -- matriz(peça), linha, coluna
+
+function addToMtx(matrix1, matrix2, r, c) -- matriz, linha, coluna
   for i = 1, #matrix1 do
     for j = 1, #matrix1[1] do
         matrix2[r+i-1][c+j-1] = matrix1[i][j]
@@ -437,15 +479,29 @@ end
 function placePiece()
   addPieceToMtx(shapes[currentPiece][rotation], mtxBase, currentPos.row, currentPos.col)
   checkLinesClear()
+  initPiece()
+end
+
+function initPiece()
   sortPiece()
-  currentPos.row = 1
-  currentPos.col = 5
   rotation = 1
+  currentPos.row = 2 - getUpmost()
+  currentPos.col = 5
+  if not isPositionValid("this") then -- game over
+    gameOver = true
+  end
+end
+
+function sortPiece()
+  currentPiece = love.math.random(#shapes)
 end
 
 function checkLinesClear() -- todo otimizar criando uma função getUpmost()
   local linesCleared = 0
   for i = currentPos.row, currentPos.row + getDownmost() - 1 do
+    while i < 1 do
+      i = i+1
+    end
     local rowCompleted = true
     local j = 1
     while rowCompleted do
@@ -462,11 +518,8 @@ function checkLinesClear() -- todo otimizar criando uma função getUpmost()
     end
   end
   countPoints(linesCleared)
-  message[1] = linesCleared
 end
-
 function countPoints(amountCleared)
-  message[2] = "score antes: "..score
   if amountCleared == 1 then
     score = score + 1
     bToBTetris = false
@@ -525,39 +578,57 @@ function isPositionValid(direction)
       if(testPosition(shapes[currentPiece][rotation], mtxBase, currentPos.row, currentPos.col, direction)) then return true else return false end
     else return false end
   end
+  if(direction == "this") then
+    if(testPosition(shapes[currentPiece][rotation], mtxBase, currentPos.row, currentPos.col, direction)) then return true else return false end
+  end
+  if(direction == "up") then
+    if(testPosition(shapes[currentPiece][rotation], mtxBase, currentPos.row, currentPos.col, direction)) then return true else return false end
+  end
 end
 
 function testPosition(piece, matrix, r, c, direction) -- para ser usada dentro de isPositionValid()
-  if(direction == "left") then
+  if direction == "left" then
     for i = 1, #piece do
       for j = 1, #piece[1] do
-        if(piece [i][j] ~= "." and matrix[r + i - 1][c + j - 2] ~= ".") then return false end
+        if piece [i][j] ~= "." and matrix[r + i - 1][c + j - 2] ~= "." then return false end
       end
     end
     return true
   end
-  if(direction == "right") then
+  if direction == "right" then
     for i = 1, #piece do
-      for j = 1, #piece[i] do
-        if(piece [i][j] ~= "." and matrix[r + i - 1][c + j] ~= ".") then return false end
+      for j = 1, #piece[1] do
+        if piece [i][j] ~= "." and matrix[r + i - 1][c + j] ~= "." then return false end
       end
     end
     return true
   end
-  if(direction == "down") then
+  if direction == "down" then
     for i = 1, #piece do
-      for j = 1, #piece[i] do
-        if(piece [i][j] ~= "." and matrix[r + i][c + j -1] ~= ".") then return false end
+      for j = 1, #piece[1] do
+        if piece [i][j] ~= "." and matrix[r + i][c + j -1] ~= "." then return false end
+      end
+    end
+    return true
+  end
+  if direction == "this" then
+    for i = 1, #piece do
+      for j = 1, #piece[1] do
+        if piece[i][j] ~= "." and matrix[r + i - 1][c + j - 1] ~= "." then return false end
+      end
+    end
+    return true
+  end
+    if direction == "up" then
+    for i = 1, #piece do
+      for j = 1, #piece[1] do
+        if piece[i][j] ~= "." and matrix[r + i - 2][c + j - 1] ~= "." then return false end
       end
     end
     return true
   end
 end
 
-function sortPiece()
-  --math.randomseed(1234)
-  currentPiece = math.random(#shapes)
-end
 
 function getLeftmost()
   for i = 1, #shapes[currentPiece][rotation][1] do
@@ -577,6 +648,14 @@ end
 
 function getDownmost()
   for i = #shapes[currentPiece][rotation], 1, -1 do
+    for j = 1, #shapes[currentPiece][rotation][1] do
+      if shapes[currentPiece][rotation][i][j] ~= "." then return i end
+    end
+  end
+end
+
+function getUpmost()
+  for i = 1, #shapes[currentPiece][rotation] do
     for j = 1, #shapes[currentPiece][rotation][1] do
       if shapes[currentPiece][rotation][i][j] ~= "." then return i end
     end

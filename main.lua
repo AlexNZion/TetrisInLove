@@ -2,6 +2,8 @@
 A Tetris Clone by Alex Nascimento
 
 
+for referente on tetrominoes behaviour: http://tetris.wikia.com/wiki/SRS
+
 TODOs em ordem de prioridade
 todo game over
 todo nextPiece
@@ -81,9 +83,9 @@ function love.load()
     },
     {
       {
-        {".",".","."},
         {"J",".","."},
-        {"J","J","J"}
+        {"J","J","J"},
+        {".",".","."}
       },
       {
         {".","J","J"},
@@ -103,24 +105,24 @@ function love.load()
     },
     {
       {
-        {".",".","."},
         {".",".","L"},
-        {"L","L","L"}
+        {"L","L","L"},
+        {".",".","."}
       },
       {
-        {"L","L","."},
         {".","L","."},
-        {".","L","."}
-      },      
+        {".","L","."},
+        {".","L","L"}
+      },
       {
         {".",".","."},
         {"L","L","L"},
         {"L",".","."}
       },
       {
+        {"L","L","."},
         {".","L","."},
-        {".","L","."},
-        {".","L","L"}
+        {".","L","."}
       }
     },
     {
@@ -131,9 +133,9 @@ function love.load()
     },
     {
       {
-        {".",".","."},
         {".","S","S"},
-        {"S","S","."}
+        {"S","S","."},
+        {".",".","."}
       },
       {
         {".","S","."},
@@ -175,9 +177,9 @@ function love.load()
     },
     {
       {
-        {".",".","."},
         {"Z","Z","."},
-        {".","Z","Z"}
+        {".","Z","Z"},
+        {".",".","."}
       },
       {
         {".",".","Z"},
@@ -408,7 +410,7 @@ function drawPauseScreen()
 end
 
 function drawGameOverScreen()
-  love.graphics.setColor(0.6,0.6,0.6,0.6)
+  love.graphics.setColor(0.2,0.2,0.2,0.6)
   love.graphics.rectangle("fill", 275,50,245,495)
   love.graphics.setColor(1,1,0)
   love.graphics.draw(gameOverText, 332,200)

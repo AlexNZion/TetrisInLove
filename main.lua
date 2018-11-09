@@ -5,7 +5,6 @@ A Tetris Clone by Alex Nascimento
 for referente on tetrominoes behaviour: http://tetris.wikia.com/wiki/SRS
 
 TODOs em ordem de prioridade
-todo game over
 todo nextPiece
 todo menus e customização
 
@@ -13,8 +12,8 @@ todo menus e customização
 function love.load()
   lastTime = love.timer.getTime()
   
-  mtxBase={} -- matriz base contém as peças que já foram colocadas
-  mtxR = {}
+  mtxBase={} -- base matrix contains the placed pieces
+  mtxR = {} -- resulting matrix contains the base plus the piece matrix (this is what is drawn to the screen)
   gridHeight = 20
   gridWidth = 10
   spacing = 25
@@ -24,6 +23,7 @@ function love.load()
   
   currentPos = { row = 1, col = 5}
   lastPos = { row = 1, col = 5 }
+  currentPiece = love.math.random(7)
   rotation = 1
   
   bToBTetris = false
@@ -50,7 +50,16 @@ function love.load()
   isPaused = false
   timer = { 1, 0.7, 0.5, 0.4, 0.3, 0.2, 0.15, 0.12, 0.1, 0.08 }-- timer reinicia a cada descida da peça e vai acelerando ao lonog do jogo
   
-  love.graphics.setFont(valuesFont)
+  myShader = love.graphics.newShader[[
+    vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords ){
+      vec4 texcolor = Texel(texture, texture_coords );
+      number gray = (color.r + color.g + color.b)/3;
+      color.r = gray;
+      color.g = gray;
+      color.b = gray;
+      return texcolor * color;
+    }
+  ]]
   
   
   --pieces
@@ -217,6 +226,7 @@ function love.load()
     {".",".",".",".",".","."},
   }
   
+  love.graphics.setFont(valuesFont)
   createGrids()
   initPiece()
 end
@@ -285,15 +295,31 @@ end
 
 function love.draw()
   drawRectGrid(mtxR, width/2 - ((gridWidth/2)*spacing), 50)
-    love.graphics.setShader()
   drawLeftPanel()
-  
-  if isPaused == true then drawPauseScreen() end
+  drawRightPanel()
+  drawRectGrid(shapes[currentPiece][rotation], 560, 80)
+  love.graphics.setShader()
+  if isPaused == true then
+    drawPauseScreen() 
+    love.graphics.setShader(myShader)
+  end
   if gameOver == true then drawGameOverScreen() end
     
   drawLog()  
   --drawRectGrid(mtxPiecesSample, width - 200, 50)
 end
+
+function drawRightPanel()
+  love.graphics.setColor(0.2,0.2,0.2)
+  love.graphics.rectangle("fill", 540,50,150,500)
+  love.graphics.setColor(0.1,0.1,0.1)
+  love.graphics.rectangle("fill", 550,60,130,140)
+  love.graphics.setColor(0.1,0.1,0.1)
+  love.graphics.rectangle("fill", 550,230,130,140)
+  love.graphics.setColor(0.1,0.1,0.1)
+  love.graphics.rectangle("fill", 550,400,130,140)
+end
+
 
 function drawLeftPanel()
   drawLeftPanelStructure()
@@ -344,7 +370,6 @@ function drawCharGrid(matrix)
 end
 
 function drawRectGrid(matrix, x, y)
-  
   local rectSize = 20
   for row = 1, #matrix do
     for col =  1, #matrix[1] do
@@ -406,6 +431,7 @@ function drawRectGrid(matrix, x, y)
 end
 
 function drawPauseScreen()
+  love.graphics.setColor(1,1,0)
   love.graphics.draw(pauseText,300,250)
 end
 
@@ -456,7 +482,7 @@ function rotatePiece()
     else rotation = temp
     end
   end
-  
+
 end
 
 
@@ -485,7 +511,8 @@ function placePiece()
 end
 
 function initPiece()
-  sortPiece()
+  --currentPiece = nextPiece
+  sortNextPiece()
   rotation = 1
   currentPos.row = 2 - getUpmost()
   currentPos.col = 5
@@ -494,8 +521,9 @@ function initPiece()
   end
 end
 
-function sortPiece()
-  currentPiece = love.math.random(#shapes)
+function sortNextPiece()
+  currentPiece = love.math.random(7)
+  --mtxNextPiece = love.math.random(#shapes)
 end
 
 function checkLinesClear() -- todo otimizar criando uma função getUpmost()
@@ -657,6 +685,7 @@ function getDownmost()
 end
 
 function getUpmost()
+  
   for i = 1, #shapes[currentPiece][rotation] do
     for j = 1, #shapes[currentPiece][rotation][1] do
       if shapes[currentPiece][rotation][i][j] ~= "." then return i end

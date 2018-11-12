@@ -1,12 +1,14 @@
 --[[
 A Tetris Clone by Alex Nascimento
+made with LOVE 2D
 
-
-for referente on tetrominoes behaviour: http://tetris.wikia.com/wiki/SRS
+for reference on tetrominoes behaviour: http://tetris.wikia.com/wiki/SRS
 
 TODOs em ordem de prioridade
-todo nextPiece
-todo menus e customização
+- corrigir gráficos da nextPiece
+- menus e customização
+- guardar uma peça
+- slide pieces (for not placing the piece right away)
 
 ]]
 function love.load()
@@ -21,10 +23,7 @@ function love.load()
   height = love.graphics.getHeight()
   message = { "1", "2", "3", "4", "5", "6" }
   
-  currentPos = { row = 1, col = 5}
-  lastPos = { row = 1, col = 5 }
-  currentPiece = love.math.random(7)
-  rotation = 1
+
   
   bToBTetris = false
   score = 0
@@ -48,7 +47,7 @@ function love.load()
   
   gameOver = false
   isPaused = false
-  timer = { 1, 0.7, 0.5, 0.4, 0.3, 0.2, 0.15, 0.12, 0.1, 0.08 }-- timer reinicia a cada descida da peça e vai acelerando ao lonog do jogo
+  timer = { 1, 0.7, 0.5, 0.4, 0.3, 0.2, 0.15, 0.12, 0.1, 0.08 }-- timer resets every time the piece goes down and with accelerates every level
   
   myShader = love.graphics.newShader[[
     vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords ){
@@ -226,6 +225,13 @@ function love.load()
     {".",".",".",".",".","."},
   }
   
+  -- Init pieces
+  currentPos = { row = 1, col = 5}
+  lastPos = { row = 1, col = 5 }
+  nextPiece = love.math.random(#shapes)
+  currentPiece = love.math.random(#shapes)
+  rotation = 1
+  
   love.graphics.setFont(valuesFont)
   createGrids()
   initPiece()
@@ -246,8 +252,8 @@ end
 function love.update(dt)
   if isPaused == false and gameOver == false then
     currentTime = love.timer.getTime()
-    addToMtx(mtxBase, mtxR, 1, 1) -- reinicia o grid
-    addPieceToMtx(shapes[currentPiece][rotation], mtxR, currentPos.row, currentPos.col) -- coloca a peça
+    addToMtx(mtxBase, mtxR, 1, 1) -- clean grid
+    addPieceToMtx(shapes[currentPiece][rotation], mtxR, currentPos.row, currentPos.col) -- position piece
     -- gravity movement
     if(currentTime - lastTime > timer[level]) then
       lastTime = love.timer.getTime()
@@ -297,7 +303,7 @@ function love.draw()
   drawRectGrid(mtxR, width/2 - ((gridWidth/2)*spacing), 50)
   drawLeftPanel()
   drawRightPanel()
-  drawRectGrid(shapes[currentPiece][rotation], 560, 80)
+  drawRectGrid(shapes[nextPiece][1], 560, 80)
   love.graphics.setShader()
   if isPaused == true then
     drawPauseScreen() 
@@ -486,7 +492,7 @@ function rotatePiece()
 end
 
 
-function addToMtx(matrix1, matrix2, r, c) -- matriz, linha, coluna
+function addToMtx(matrix1, matrix2, r, c) -- matrix, row, column
   for i = 1, #matrix1 do
     for j = 1, #matrix1[1] do
         matrix2[r+i-1][c+j-1] = matrix1[i][j]
@@ -494,7 +500,7 @@ function addToMtx(matrix1, matrix2, r, c) -- matriz, linha, coluna
   end
 end
 
-function addPieceToMtx(piece, matrix, r, c) -- matriz(peça), linha, coluna
+function addPieceToMtx(piece, matrix, r, c) -- matrix, row, column
   for i = 1, #piece do
     for j = 1, #piece[1] do
       if piece[i][j] ~= "." then
@@ -511,7 +517,7 @@ function placePiece()
 end
 
 function initPiece()
-  --currentPiece = nextPiece
+  currentPiece = nextPiece
   sortNextPiece()
   rotation = 1
   currentPos.row = 2 - getUpmost()
@@ -522,11 +528,10 @@ function initPiece()
 end
 
 function sortNextPiece()
-  currentPiece = love.math.random(7)
-  --mtxNextPiece = love.math.random(#shapes)
+  nextPiece = love.math.random(#shapes)
 end
 
-function checkLinesClear() -- todo otimizar criando uma função getUpmost()
+function checkLinesClear()
   local linesCleared = 0
   for i = currentPos.row, currentPos.row + getDownmost() - 1 do
     while i < 1 do
@@ -616,7 +621,7 @@ function isPositionValid(direction)
   end
 end
 
-function testPosition(piece, matrix, r, c, direction) -- para ser usada dentro de isPositionValid()
+function testPosition(piece, matrix, r, c, direction) -- to be used inside of isPositionValid()
   if direction == "left" then
     for i = 1, #piece do
       for j = 1, #piece[1] do

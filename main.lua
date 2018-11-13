@@ -11,7 +11,7 @@ TODOs em ordem de prioridade
 
 ]]
 function love.load()
-  lastTime = love.timer.getTime()
+  
   
   mtxBase={} -- base matrix contains the placed pieces
   mtxR = {} -- resulting matrix contains the base plus the piece matrix (this is what is drawn to the screen)
@@ -46,6 +46,11 @@ function love.load()
   levelValueText = love.graphics.newText(valuesFont,level)
   nextLevelValueText = love.graphics.newText(valuesFont,nextLevel[nextLevelIndex])
   scoreValueText = love.graphics.newText(valuesFont,score)
+  
+  placePieceSound = love.audio.newSource("sounds/placeBlock.wav", "static")
+  musicSound = love.audio.newSource("sounds/RedArmyChoir-Korobeiniki.mp3", "stream")
+  musicSound:setLooping(true)
+  musicSound:play()
   
   gameOver = false
   isPaused = false
@@ -227,12 +232,15 @@ function love.load()
     {".",".",".",".",".","."},
   }
   
+  lastTime = love.timer.getTime()
+  
   -- Init pieces
   currentPos = { row = 1, col = 5}
   lastPos = { row = 1, col = 5 }
   nextPiece = love.math.random(#shapes)
   currentPiece = love.math.random(#shapes)
   rotation = 1
+  
   
   love.graphics.setFont(valuesFont)
   createMatrix(mtxBase, gridHeight, gridWidth)
@@ -295,7 +303,10 @@ function love.keypressed(key, scancode, isrepeat)
       rotatePiece()
     end
   end
-  if key == "p"  and gameOver == false then isPaused = not isPaused end
+  if key == "p"  and gameOver == false then
+    if isPaused == false then gamePaused() else gameResumed() end
+    isPaused = not isPaused 
+  end
   if key == "escape" then love.event.quit() end
   if key == "r" then love.load(); end
 end
@@ -306,10 +317,8 @@ function love.draw()
   drawLeftPanel()
   drawRightPanel()
   drawRectGrid(shapes[nextPiece][1], 618 - getRightmost(shapes[nextPiece][1])*(spacing/2), 150  - (getUpmost(shapes[nextPiece][1])-1)*spacing - (getPieceHeight(shapes[nextPiece][1])*spacing/2), true)
-  love.graphics.setShader()
   if isPaused == true then
-    drawPauseScreen() 
-    love.graphics.setShader(myShader)
+    drawPauseScreen()
   end
   if gameOver == true then drawGameOverScreen() end
     
@@ -458,9 +467,21 @@ function drawLog()
   end
 end
 
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
+               ----------------------
+               --|     EVENTS    | --
+               ----------------------
+               
+function gamePaused()
+  love.graphics.setShader(myShader)
+  musicSound:setVolume(0.15)
+end
 
+function gameResumed()
+  love.graphics.setShader()
+  musicSound:setVolume(1)
+end
+
+----------------------------------------------------------------------------------
 function rotatePiece()
   temp = rotation
   if rotation == #shapes[currentPiece] then 
@@ -515,6 +536,7 @@ function placePiece()
   addPieceToMtx(shapes[currentPiece][rotation], mtxBase, currentPos.row, currentPos.col)
   checkLinesClear()
   initPiece()
+  placePieceSound:play()
 end
 
 function initPiece()

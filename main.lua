@@ -5,7 +5,6 @@ made with LOVE 2D
 for reference on tetrominoes behaviour: http://tetris.wikia.com/wiki/SRS
 
 TODOs em ordem de prioridade
-- corrigir gráficos da nextPiece
 - menus e customização
 - guardar uma peça
 - slide pieces (for not placing the piece right away)
@@ -16,8 +15,10 @@ function love.load()
   
   mtxBase={} -- base matrix contains the placed pieces
   mtxR = {} -- resulting matrix contains the base plus the piece matrix (this is what is drawn to the screen)
+  mtxNextPiece = {}
   gridHeight = 20
   gridWidth = 10
+  rectSize = 20
   spacing = 25
   width = love.graphics.getWidth()
   height = love.graphics.getHeight()
@@ -38,6 +39,7 @@ function love.load()
   nextLevelText = love.graphics.newText(textFont, "Next Level")
   scoreText = love.graphics.newText(textFont, "Score")
   pauseText = love.graphics.newText(valuesFont, "PAUSED")
+  nextPiceText = love.graphics.newText(textFont, "NEXT")
   gameOverText = love.graphics.newText(valuesFont, "GAME\nOVER")
   tryAgainText = love.graphics.newText(textFont, "press R to try again")
   
@@ -233,17 +235,17 @@ function love.load()
   rotation = 1
   
   love.graphics.setFont(valuesFont)
-  createGrids()
+  createMatrix(mtxBase, gridHeight, gridWidth)
+  createMatrix(mtxR, gridHeight, gridWidth)
+  createMatrix(mtxNextPiece, 4, 4)
   initPiece()
 end
 
-function createGrids()
-  for row = 1, gridHeight do
-    mtxBase[row] = {}
-    mtxR[row] = {}
-    for col = 1, gridWidth do
-      mtxBase[row][col] = "."
-      mtxR[row][col] = "."
+function createMatrix(matrix, rowN, colN)
+  for row = 1, rowN do
+    matrix[row] = {}
+    for col = 1, colN do
+      matrix[row][col] = "."
     end
   end
 end
@@ -300,10 +302,10 @@ end
 ----------------------------------------------------------------------------
 
 function love.draw()
-  drawRectGrid(mtxR, width/2 - ((gridWidth/2)*spacing), 50)
+  drawRectGrid(mtxR, width/2 - ((gridWidth/2)*spacing), 50, false)
   drawLeftPanel()
   drawRightPanel()
-  drawRectGrid(shapes[nextPiece][1], 560, 80)
+  drawRectGrid(shapes[nextPiece][1], 618 - getRightmost(shapes[nextPiece][1])*(spacing/2), 150  - (getUpmost(shapes[nextPiece][1])-1)*spacing - (getPieceHeight(shapes[nextPiece][1])*spacing/2), true)
   love.graphics.setShader()
   if isPaused == true then
     drawPauseScreen() 
@@ -317,13 +319,11 @@ end
 
 function drawRightPanel()
   love.graphics.setColor(0.2,0.2,0.2)
-  love.graphics.rectangle("fill", 540,50,150,500)
+  love.graphics.rectangle("fill", 540,50,150,160)
   love.graphics.setColor(0.1,0.1,0.1)
   love.graphics.rectangle("fill", 550,60,130,140)
-  love.graphics.setColor(0.1,0.1,0.1)
-  love.graphics.rectangle("fill", 550,230,130,140)
-  love.graphics.setColor(0.1,0.1,0.1)
-  love.graphics.rectangle("fill", 550,400,130,140)
+  love.graphics.setColor(1,1,0)
+  love.graphics.draw(nextPiceText, 592,70)
 end
 
 
@@ -375,13 +375,14 @@ function drawCharGrid(matrix)
   end
 end
 
-function drawRectGrid(matrix, x, y)
-  local rectSize = 20
+function drawRectGrid(matrix, x, y, preview)
   for row = 1, #matrix do
     for col =  1, #matrix[1] do
       if     matrix[row][col] == "." then
-        love.graphics.setColor(0.2,0.2,0.2)
-        love.graphics.rectangle("fill", x + (col-1) * spacing, y + (row-1) * spacing, rectSize, rectSize)
+        if preview == false then
+          love.graphics.setColor(0.2,0.2,0.2)
+          love.graphics.rectangle("fill", x + (col-1) * spacing, y + (row-1) * spacing, rectSize, rectSize)
+        end
       elseif matrix[row][col] == "I" then
         love.graphics.setColor(1,1,1)
         love.graphics.rectangle("fill", x + (col-1) * spacing, y + (row-1) * spacing, rectSize, rectSize)
@@ -468,17 +469,17 @@ function rotatePiece()
     rotation = rotation + 1 
   end
   -- correct position if out of bounds
-  if currentPos.col + getLeftmost() - 1 < 1 then
-    currentPos.col = 2 - getLeftmost()
+  if currentPos.col + getLeftmost(shapes[currentPiece][rotation]) - 1 < 1 then
+    currentPos.col = 2 - getLeftmost(shapes[currentPiece][rotation])
   end
-  if currentPos.col + getRightmost() - 1 > gridWidth then
-    currentPos.col = 1 + gridWidth - getRightmost()
+  if currentPos.col + getRightmost(shapes[currentPiece][rotation]) - 1 > gridWidth then
+    currentPos.col = 1 + gridWidth - getRightmost(shapes[currentPiece][rotation])
   end
-  if currentPos.row + getDownmost() - 1 > gridHeight then
-    currentPos.row = 1 + gridHeight - getDownmost()
+  if currentPos.row + getDownmost(shapes[currentPiece][rotation]) - 1 > gridHeight then
+    currentPos.row = 1 + gridHeight - getDownmost(shapes[currentPiece][rotation])
   end
-  if currentPos.row + getUpmost() - 1 < 1 then
-    currentPos.row = 2 - getUpmost()
+  if currentPos.row + getUpmost(shapes[currentPiece][rotation]) - 1 < 1 then
+    currentPos.row = 2 - getUpmost(shapes[currentPiece][rotation])
   end
   
   -- check colision with other pieces
@@ -520,7 +521,7 @@ function initPiece()
   currentPiece = nextPiece
   sortNextPiece()
   rotation = 1
-  currentPos.row = 2 - getUpmost()
+  currentPos.row = 2 - getUpmost(shapes[currentPiece][rotation])
   currentPos.col = 5
   if not isPositionValid("this") then -- game over
     gameOver = true
@@ -533,7 +534,7 @@ end
 
 function checkLinesClear()
   local linesCleared = 0
-  for i = currentPos.row, currentPos.row + getDownmost() - 1 do
+  for i = currentPos.row, currentPos.row + getDownmost(shapes[currentPiece][rotation]) - 1 do
     while i < 1 do
       i = i+1
     end
@@ -599,17 +600,17 @@ end
 
 function isPositionValid(direction)
   if(direction == "left") then
-    if(currentPos.col + getLeftmost() - 1 >= 1) then
+    if(currentPos.col + getLeftmost(shapes[currentPiece][rotation]) - 1 >= 1) then
       if(testPosition(shapes[currentPiece][rotation], mtxBase, currentPos.row, currentPos.col, direction)) then return true else return false end
     else return false end
   end
   if(direction == "right") then
-    if (currentPos.col + getRightmost() - 1 <= gridWidth) then
+    if (currentPos.col + getRightmost(shapes[currentPiece][rotation]) - 1 <= gridWidth) then
       if(testPosition(shapes[currentPiece][rotation], mtxBase, currentPos.row, currentPos.col, direction)) then return true else return false end
     else return false end
   end
   if(direction == "down") then
-    if(currentPos.row + getDownmost() - 1 < gridHeight) then
+    if(currentPos.row + getDownmost(shapes[currentPiece][rotation]) - 1 < gridHeight) then
       if(testPosition(shapes[currentPiece][rotation], mtxBase, currentPos.row, currentPos.col, direction)) then return true else return false end
     else return false end
   end
@@ -664,36 +665,38 @@ function testPosition(piece, matrix, r, c, direction) -- to be used inside of is
   end
 end
 
+function getPieceHeight(matrix)
+  return getDownmost(matrix) - getUpmost(matrix) + 1
+end
 
-function getLeftmost()
-  for i = 1, #shapes[currentPiece][rotation][1] do
-    for j = 1, #shapes[currentPiece][rotation] do
-      if shapes[currentPiece][rotation][j][i] ~= "." then return i end
+function getLeftmost(matrix)
+  for i = 1, #matrix[1] do
+    for j = 1, #matrix do
+      if matrix[j][i] ~= "." then return i end
     end
   end
 end
 
-function getRightmost()
-  for i = #shapes[currentPiece][rotation][1], 1, -1 do
-    for j = 1, #shapes[currentPiece][rotation] do
-      if shapes[currentPiece][rotation][j][i] ~= "." then return i end
+function getRightmost(matrix)
+  for i = #matrix[1], 1, -1 do
+    for j = 1, #matrix do
+      if matrix[j][i] ~= "." then return i end
     end
   end
 end
 
-function getDownmost()
-  for i = #shapes[currentPiece][rotation], 1, -1 do
-    for j = 1, #shapes[currentPiece][rotation][1] do
-      if shapes[currentPiece][rotation][i][j] ~= "." then return i end
+function getDownmost(matrix)
+  for i = #matrix, 1, -1 do
+    for j = 1, #matrix[1] do
+      if matrix[i][j] ~= "." then return i end
     end
   end
 end
 
-function getUpmost()
-  
-  for i = 1, #shapes[currentPiece][rotation] do
-    for j = 1, #shapes[currentPiece][rotation][1] do
-      if shapes[currentPiece][rotation][i][j] ~= "." then return i end
+function getUpmost(matrix)
+  for i = 1, #matrix do
+    for j = 1, #matrix[1] do
+      if matrix[i][j] ~= "." then return i end
     end
   end
 end

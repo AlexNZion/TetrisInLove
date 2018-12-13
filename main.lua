@@ -43,6 +43,7 @@ function love.load()
   gameOverText = love.graphics.newText(valuesFont, "GAME\nOVER")
   tryAgainText = love.graphics.newText(textFont, "press R to try again")
   
+  
   levelValueText = love.graphics.newText(valuesFont,level)
   nextLevelValueText = love.graphics.newText(valuesFont,nextLevel[nextLevelIndex])
   scoreValueText = love.graphics.newText(valuesFont,score)
@@ -322,7 +323,7 @@ function love.draw()
   end
   if gameOver == true then drawGameOverScreen() end
     
-  drawLog()  
+  --drawLog()  
   --drawRectGrid(mtxPiecesSample, width - 200, 50)
 end
 
@@ -489,6 +490,7 @@ function rotatePiece()
   else 
     rotation = rotation + 1 
   end
+  
   -- correct position if out of bounds
   if currentPos.col + getLeftmost(shapes[currentPiece][rotation]) - 1 < 1 then
     currentPos.col = 2 - getLeftmost(shapes[currentPiece][rotation])
@@ -577,6 +579,7 @@ function checkLinesClear()
   end
   countPoints(linesCleared)
 end
+
 function countPoints(amountCleared)
   if amountCleared == 1 then
     score = score + 1
@@ -677,7 +680,8 @@ function testPosition(piece, matrix, r, c, direction) -- to be used inside of is
     end
     return true
   end
-    if direction == "up" then
+  if direction == "up" then
+    if currentPos.row < 2 then return false end -- solucao temporária. TODO matriz base mais alta do que a matriz que vemos.
     for i = 1, #piece do
       for j = 1, #piece[1] do
         if piece[i][j] ~= "." and matrix[r + i - 2][c + j - 1] ~= "." then return false end

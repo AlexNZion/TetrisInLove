@@ -2,13 +2,15 @@ TetrisInLove
 Clone de Tetris feito utilizando o framework Love2D.
 
 Este foi um projeto realizado no primeiro semestre do curso de Tecnologia em Jogos Digitais do Mackenzie,
-para a matÈria do professor AndrÈ Kishimoto, Plataformas para Jogos Digitais I.
+para a mat√©ria do professor Andr√© Kishimoto, Plataformas para Jogos Digitais I.
 
-InstruÁıes:
+Instru√ß√µes:
 
-DIREITA - move a peÁa para a direita 
-ESQUERDA - move a peÁa para a esquerda
-CIMA - rotaciona a peÁa em sentido hor·rio
+DIREITA - move a pe√ßa para a direita 
+ESQUERDA - move a pe√ßa para a esquerda
+BAIXO - move a pe√ßa para baixo
+CIMA - rotaciona a pe√ßa em sentido hor√°rio
+ESPA√áO - deixa a pe√ßa cair
 P - Pausa o jogo
 R - Reinicia o jogo
 
